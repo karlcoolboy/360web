@@ -1,0 +1,211 @@
+<!-- 文章预览页面 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>preview</title>
+    <link rel="stylesheet" href="https://ssl-static2.720static.com/oms/static/js/ckeditor_4.11.4_full_html5video_v5/contents.css">
+    <link rel="stylesheet" href="https://ssl-static2.720static.com/oms/static/js/ckeditor_4.11.4_full_html5video_v5/plugins/copyformatting/styles/copyformatting.css">
+    <link rel="stylesheet" href="https://ssl-static2.720static.com/oms/static/js/ckeditor_4.11.4_full_html5video_v5/plugins/tableselection/styles/tableselection.css">
+    <script type="text/javascript">
+        var bodyWidth;
+        //message事件监听
+        window.addEventListener('message', function (e) {
+            var act = e.data.act,
+                content = e.data.content,
+                ua = navigator.userAgent,
+                mobileDeviceRegExp = /(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i;
+            if (act == "preview") {
+                document.body.innerHTML = mobileDeviceRegExp.test(ua)
+                                            ? handleHtmlString(content)
+                                            : content;
+                bodyWidth = document.body.offsetWidth
+            }
+        });
+        //处理html字符串的方法
+        function handleHtmlString(htmlStr) {
+            var newStr_img,
+                newStr_video,
+                newStr_video_poster,
+                imgArr,
+                videoArr,
+                finalStr,
+                imgRegExp = /<img.*?(?:>|\/>)/g,
+                videoRegExp = /<video.*?(?:>|\/>)/g,
+                imgAttr = "onload=\"handleOnLoad(this)\"",
+                videoPosterReg = /poster=[\\"\\"]?([^\\"\\"]*)[\\"\\"]?/,
+                videoAttr = [
+                    "playsinline=\"true\"",
+                    "webkit-playsinline=\"true\"",
+                    "x5-video-player-type=\"h5-page\"",
+                    "onloadeddata=\"handleOnLoad(this)\""
+                ].join("\ "),
+                videoDefaultCover = "poster=\"https://ssl-static2.720static.com/static/image/default_video_cover.jpg\"";
+            //有图片
+            if(htmlStr.match(imgRegExp)) {
+                imgArr = htmlStr.match(imgRegExp);
+                for(var i=0; i < imgArr.length; i++) {
+                    i == 0
+                    ? newStr_img = htmlStr.replace(imgArr[i], function(item){
+                        return item.replace(/\ /, "\ "+imgAttr+"\ ");
+                    })
+                    : newStr_img = newStr_img.replace(imgArr[i], function(item){
+                        return item.replace(/\ /, "\ "+imgAttr+"\ ");
+                    })
+                }
+                //有图片同时还有视频
+                if(newStr_img.match(videoRegExp)) {
+                    videoArr = newStr_img.match(videoRegExp);
+                    //处理视频封面
+                    for(var i=0; i < videoArr.length; i++) {
+                        //给没有封面的视频设置默认封面
+                        if(!videoPosterReg.test(videoArr[i])) {
+                            if(i == 0) {
+                                newStr_video = newStr_img.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ "+videoDefaultCover+"\ ");
+                                })
+                            }else{
+                                newStr_video = newStr_video.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ "+videoDefaultCover+"\ ");
+                                })
+                            }
+                        }else{
+                            //有封面的就不设置默认封面
+                            if(i == 0) {
+                                newStr_video = newStr_img.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ ");
+                                })
+                            }else{
+                                newStr_video = newStr_video.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ ");
+                                })
+                            }
+                        }
+                    }
+                    finalStr = newStr_video;
+                }else{
+                    //有图片但没有视频
+                    finalStr = newStr_img;
+                }
+            }else{
+                //没有图片但是有视频
+                if(htmlStr.match(videoRegExp)) {
+                    videoArr = htmlStr.match(videoRegExp);
+                    //处理视频封面
+                    for(var i=0; i < videoArr.length; i++) {
+                        //给没有封面的视频设置默认封面
+                        if(!videoPosterReg.test(videoArr[i])) {
+                            if(i == 0) {
+                                newStr_video = htmlStr.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ "+videoDefaultCover+"\ ");
+                                })
+                            }else{
+                                newStr_video = newStr_video.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ "+videoDefaultCover+"\ ");
+                                })
+                            }
+                        }else{
+                            //有封面的就不设置默认封面
+                            if(i == 0) {
+                                newStr_video = htmlStr.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ ");
+                                })
+                            }else{
+                                newStr_video = newStr_video.replace(videoArr[i], function(item){
+                                    return item.replace(/\ /, "\ "+videoAttr+"\ ");
+                                })
+                            }
+                        }
+                    }
+                    finalStr = newStr_video;
+                }else{
+                    //没有图片也没有视频
+                    finalStr = htmlStr;
+                }
+            }
+            return finalStr
+        }
+        //DOM处理函数
+        function handleOnLoad(self) {
+            var tagName,
+                tagName = self.localName;
+            if(tagName == "img") {
+                //宽高都没有或者只有宽没有高的就不用管了, 只处理宽高都有或者只有高的
+                //宽高都有的
+                if(self.style.width && self.style.height) {
+                    //style.width > bodyWidth再处理
+                    //比例不相等, 表示变形了, 用户设置的宽高的比例和元素的clientWidth, clientHeight的比例
+                    if(self.style.width.replace(/px/, "") > bodyWidth) {
+                        var contentRate = self.clientWidth / self.clientHeight,
+                            userRate = self.style.width.replace(/px/, "") / self.style.height.replace(/px/, "");
+                        if(contentRate != userRate){
+                            //根据用户设置的样式为比例, 和内容宽clientWidth算出一个高, 赋值给元素
+                            self.style.height = (self.clientWidth / userRate).toFixed(2) + "px";
+                        }
+                        // console.log({
+                        //     node:self,
+                        //     name:tagName,
+                        //     realHeight:(self.clientWidth / userRate).toFixed(2) + "px",
+                        //     userRate:self.style.width.replace(/px/, "") / self.style.height.replace(/px/, ""),
+                        //     styleWidth:self.style.width,
+                        //     styleHeight:self.style.height,
+                        //     scrollWidth:self.scrollWidth,
+                        //     scrollHeight:self.scrollHeight,
+                        //     offsetWidth:self.offsetWidth,
+                        //     offsetHeight:self.offsetHeight,
+                        //     clientWidth:self.clientWidth,
+                        //     clientHeight:self.clientHeight,
+                        //     naturalWidth:self.naturalWidth,
+                        //     naturalHeight:self.naturalHeight,
+                        // });
+                    }
+                }
+            }else if(tagName == "video") {
+                if(self.width && self.height) {
+                    if(self.width > bodyWidth) {
+                        var userRate = self.width / self.height,
+                            contentRate = self.clientWidth / self.clientHeight;
+                        // console.log({
+                        //     node:self,
+                        //     name:tagName,
+                        //     width:self.width,
+                        //     height:self.height,
+                        //     attrWidth:self.getAttribute("width"),
+                        //     attrHeight:self.getAttribute("height"),
+                        //     videoWidth:self.videoWidth,
+                        //     videoHeight:self.videoHeight,
+                        //     scrollWidth:self.scrollWidth,
+                        //     scrollHeight:self.scrollHeight,
+                        //     offsetWidth:self.offsetWidth,
+                        //     offsetHeight:self.offsetHeight,
+                        //     clientWidth:self.clientWidth,
+                        //     clientHeight:self.clientHeight,
+                        //     contentRate:self.clientWidth / self.clientHeight,
+                        //     userRate:self.width / self.height
+                        // });
+                        if(contentRate != userRate){
+                            self.setAttribute("height", (self.clientWidth / userRate).toFixed(2) + "px");
+                        }
+                    }
+                }
+            }
+        }
+        //获取高度并发给父页面
+        var htmlHeight,
+            initHeight = 0;
+        setInterval(function() {
+            htmlHeight = document.documentElement.offsetHeight;
+            if(htmlHeight != initHeight) {
+                initHeight = htmlHeight
+                window.parent.postMessage({
+                    act: "preview-response",
+                    docHeight: initHeight
+                }, "*")
+            }
+        }, 50)
+    </script>
+</head>
+<body class="cke_editable cke_editable_themed cke_contents_ltr cke_show_borders"></body>
+</html>
