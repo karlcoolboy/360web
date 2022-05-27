@@ -1,4 +1,4 @@
-cd "Github repo"/360web
+cd "Github repo"/"360测试"
 now=$(date "+%Y-%m-%d")
 git add .
 git commit -m "$now"
